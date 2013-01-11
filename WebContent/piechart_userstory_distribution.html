@@ -13,19 +13,31 @@
    <script type="text/javascript">
 
      var rallyDataSource = null;
-     var storyPointsPrTag= {}
+     var storyPointsPrTag= {}; 
+     var iteration = null;
+     var iterationFilterQuery=null;
+     var table= null;
+     var pieChart=null;
 
      function onLoad() {
-       rallyDataSource = new rally.sdk.data.RallyDataSource("9369223425",
+       /*rallyDataSource = new rally.sdk.data.RallyDataSource("9369223425",
                                   "9369223515",
                                  "false",
-                                 "true");
+                                 "true");*/
        
-       /*rallyDataSource = rally.sdk.data.RallyDataSource("__WORKSPACE_OID__",
+       rallyDataSource = new rally.sdk.data.RallyDataSource("__WORKSPACE_OID__",
                "__PROJECT_OID__",
                "__PROJECT_SCOPING_UP__",
-               "__PROJECT_SCOPING_DOWN__");*/
-               
+               "__PROJECT_SCOPING_DOWN__");
+        
+                                 
+       var panelContext = rally.sdk.util.Context.getPanelContext();
+       if(panelContext.timeboxFilter && panelContext.timeboxFilter.iteration) {
+           //Global iteration filter
+           iteration = panelContext.timeboxFilter.iteration;
+           iterationFilterQuery = panelContext.timeboxFilter.query;
+       }                           
+                                 
     	createPieChart();
         
 	//var iterConfig = {label : ""};
@@ -40,7 +52,8 @@
     	          	key : 'stories',
     	          	fetch: true, 
     	          	//query: '(Iteration.Name Contains "2013 01+02")'
-    	          	query: '(Name Contains "Roadmap")'
+    	          	//query: '(Name Contains "Roadmap")'
+    	          	query: iterationFilterQuery
     	        	};
     	 rallyDataSource.findAll(queryObject, showPieChartBasedOnResult);
      }
@@ -93,13 +106,15 @@
              height : 400,
              width : 400
            };
-         var pieChart = new rally.sdk.ui.PieChart(pieConfig, rallyDataSource);
+         pieChart = new rally.sdk.ui.PieChart(pieConfig, rallyDataSource);
          pieChart.display("chart_distribution");
          
          //can only be called once this method is complete
          showTableDistribution ();
        }
      
+     //refactor: Use onPieCompletedCallback callback instead?
+     //http://developer.rallydev.com/pie-chart
      function showTableDistribution (){
     	 
          var tableConfig = {
@@ -128,6 +143,22 @@
     	 }
 
           table.display(document.getElementById('table_distribution'));
+     }
+       
+       //http://developer.rallydev.com/apps-timebox-filtered-dashboards
+     function onDashboardPageTimeboxFilterChanged(args) {
+         if (args.iteration) {
+             //Global iteration changed
+             iteration = args.iteration;
+             iterationFilterQuery = args.query;
+             if(table){
+            	 table.destroy();
+             }
+             if(pieChart){
+            	 pieChart.destroy();
+             }
+            
+         } 
      }
 
      rally.addOnLoad(onLoad);
