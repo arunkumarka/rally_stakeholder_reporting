@@ -18,21 +18,76 @@
        rallyDataSource = new rally.sdk.data.RallyDataSource("9369223425",
                                   "9369223515",
                                  "false",
-                                 "true"); 
+                                 "true");
        
-	
-    showPie();
+       /*rallyDataSource = rally.sdk.data.RallyDataSource("__WORKSPACE_OID__",
+               "__PROJECT_OID__",
+               "__PROJECT_SCOPING_UP__",
+               "__PROJECT_SCOPING_DOWN__");*/
+               
+    	createPieChart();
 	//var iterConfig = {label : ""};
        //iterDropdown = new rally.sdk.ui.IterationDropdown(iterConfig, rallyDataSource);
       //iterDropdown.display(document.getElementById("iterationDiv"), onIterationSelected);
      }
      
-     function showPie() {
+     function createPieChart(){
+    	 
+    	 var queryObject = {
+    	          	type: 'HierarchicalRequirement',
+    	          	key : 'stories',
+    	          	fetch: true, 
+    	          	//query: '(Iteration.Name Contains "2013 01+02")'
+    	          	query: '(Name Contains "Roadmap")'
+    	        	};
+    	 rallyDataSource.findAll(queryObject, showPieChartBasedOnResult);
+     }
+     
+     function showPieChartBasedOnResult(results) {
 
+    	 var NO_TAG= "User stories not tagged"
+    	 var storyPointsPrTag= {}
+    	 
+    	 for ( var i = 0; i < results.stories.length; i++) {
+			var userStory = results.stories[i];
+			var tag=null;
+			var storyPoints = 0;
+			if(userStory.Tags != null && userStory.Tags.length>=1){
+				tag = userStory.Tags[0]._refObjectName;
+				
+				
+			}else {
+				tag=NO_TAG;
+			}
+			
+			storyPoints = userStory.PlanEstimate;
+			if(storyPointsPrTag.hasOwnProperty(tag)){
+				storyPointsPrTag[tag]=storyPointsPrTag[tag]+storyPoints;
+			}else {
+				storyPointsPrTag[tag]=storyPoints;
+			}
+			
+		}
+    	 
+    	 
+    	 var chartData={};
+    	 var chartValues = {};
+    	 for (var key in storyPointsPrTag) {
+    		    if (storyPointsPrTag.hasOwnProperty(key)) {
+    		        //alert('key is: ' + k + ', value is: ' + a[k]);
+    				chartValues[key]=key;
+    				chartData[key]=storyPointsPrTag[key];
+    		        
+    		    }
+    	 }
+    	 
+    	 //var chartValues = {"/release/12345": "Release 1", "/release/23456": "Release 2"};
+    	 //var chartData = {"/release/12345": 5, "/release/23456": 8};
+    	 
          var pieConfig = {
              title : "User story distribution",
-             values: {"/release/12345": "Release 1", "/release/23456": "Release 2"},
-             data: {"/release/12345": 5, "/release/23456": 8},
+             values: chartValues,
+             data:  chartData,
              height : 400,
              width : 400
            };
