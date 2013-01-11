@@ -1,0 +1,52 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+   <title>Userstory distribution</title>
+
+    <!--App information-->
+    <meta name="Name" content="User story distribution"/>
+    <meta name="Version" content="0.1"/>
+    <meta name="Vendor" content="Bouvet (Dagfinn Parnas)"/>
+
+   <script type="text/javascript" src="https://rally1.rallydev.com/apps/1.29/sdk.js"></script>
+   <script type="text/javascript">
+
+     var rallyDataSource = null;
+
+     function onLoad() {
+       rallyDataSource = new rally.sdk.data.RallyDataSource("9369223425",
+                                  "9369223515",
+                                 "false",
+                                 "true"); 
+       
+	
+    showPie();
+	//var iterConfig = {label : ""};
+       //iterDropdown = new rally.sdk.ui.IterationDropdown(iterConfig, rallyDataSource);
+      //iterDropdown.display(document.getElementById("iterationDiv"), onIterationSelected);
+     }
+     
+     function showPie() {
+
+         var pieConfig = {
+             title : "User story distribution",
+             values: {"/release/12345": "Release 1", "/release/23456": "Release 2"},
+             data: {"/release/12345": 5, "/release/23456": 8},
+             height : 400,
+             width : 400
+           };
+         var pieChart = new rally.sdk.ui.PieChart(pieConfig, rallyDataSource);
+         pieChart.display("chart_distribution");
+       }
+
+     rally.addOnLoad(onLoad);
+   </script>
+
+</head>
+<body>
+
+   <div id="chart_distribution"></div>
+
+</body>
+</html>
