@@ -13,6 +13,7 @@
    <script type="text/javascript">
 
      var rallyDataSource = null;
+     var storyPointsPrTag= {}
 
      function onLoad() {
        rallyDataSource = new rally.sdk.data.RallyDataSource("9369223425",
@@ -26,6 +27,7 @@
                "__PROJECT_SCOPING_DOWN__");*/
                
     	createPieChart();
+        
 	//var iterConfig = {label : ""};
        //iterDropdown = new rally.sdk.ui.IterationDropdown(iterConfig, rallyDataSource);
       //iterDropdown.display(document.getElementById("iterationDiv"), onIterationSelected);
@@ -46,7 +48,7 @@
      function showPieChartBasedOnResult(results) {
 
     	 var NO_TAG= "User stories not tagged"
-    	 var storyPointsPrTag= {}
+    	
     	 
     	 for ( var i = 0; i < results.stories.length; i++) {
 			var userStory = results.stories[i];
@@ -93,7 +95,40 @@
            };
          var pieChart = new rally.sdk.ui.PieChart(pieConfig, rallyDataSource);
          pieChart.display("chart_distribution");
+         
+         //can only be called once this method is complete
+         showTableDistribution ();
        }
+     
+     function showTableDistribution (){
+    	 
+         var tableConfig = {
+                 columnKeys : ['Category', 'StoryPoints', 'Percentage'],
+                 columnHeaders: ['Category', 'Story points', 'Percentage'],
+                 columnWidths : ['300px', '80px','80px'],
+               };
+
+          table = new rally.sdk.ui.Table(tableConfig,rallyDataSource);
+
+          var sumStoryPoints= 0; 
+          for (var key in storyPointsPrTag) {
+  		    if (storyPointsPrTag.hasOwnProperty(key)) {
+  		    	sumStoryPoints = sumStoryPoints + storyPointsPrTag[key];   
+  		    }
+  	 	  }
+          
+          for (var key in storyPointsPrTag) {
+    		    if (storyPointsPrTag.hasOwnProperty(key)) {
+    		    	var storyPoints = storyPointsPrTag[key];
+    		    	var percentage = ((storyPoints/sumStoryPoints)*100).toFixed(2) + ' %';
+    		    	
+    		    	rowInfo = {'Category' : key, 'StoryPoints' : storyPoints, 'Percentage' : percentage}; 
+    		    	table.addRow(rowInfo);   
+    		    }
+    	 }
+
+          table.display(document.getElementById('table_distribution'));
+     }
 
      rally.addOnLoad(onLoad);
    </script>
@@ -102,6 +137,7 @@
 <body>
 
    <div id="chart_distribution"></div>
+   <div id="table_distribution"></div>
 
 </body>
 </html>
