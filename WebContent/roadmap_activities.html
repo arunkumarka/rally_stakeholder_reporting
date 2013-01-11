@@ -1,0 +1,98 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+   <title>SDS Vision and roadmap activities</title>
+
+    <!--App information-->
+    <meta name="Name" content="SDS Vision and roadmap activities"/>
+    <meta name="Version" content="0.1"/>
+    <meta name="Vendor" content="Bouvet (Dagfinn Parnas)"/>
+
+   <script type="text/javascript" src="https://rally1.rallydev.com/apps/1.29/sdk.js"></script>
+   <script type="text/javascript">
+
+     var rallyDataSource = null;
+     var table1=null;
+     var table2=null;
+     var table3=null;
+     var table4=null;
+
+     function showUserStoriesTable(tagName, divId, table) {
+	document.getElementById(divId).innerHTML = "";       
+	if(table) {
+	  table.destroy();
+       }
+
+
+       var tableConfig = {
+         columnKeys : ['FormattedID', 'Name', 'ScheduleState'],
+         columnHeaders: ['FormattedID', 'Name', 'State'],
+         columnWidths : ['80px', '450px','100px'],
+	 key : 'stories',
+         type : 'hierarchicalrequirement',
+         order: 'ScheduleState, FormattedID DESC',
+         query: '(Tags.Name Contains "'+tagName+'")',
+	 fetch: true
+       };
+
+ //query: '(Iteration.Name = "' + iterDropdown.getSelectedName() + '")',  
+
+       table = new rally.sdk.ui.Table(tableConfig,rallyDataSource);
+	table.addEventListener(table.getValidEvents().onDataRetrieved, function(t, args) {
+            rally.forEach(args.items, function(item) {
+               item.FormattedID = new rally.sdk.ui.basic.Link({"item":item, "text":item.FormattedID});
+
+	    });
+	});
+       //table.addRows(results.stories);
+
+
+       table.display(document.getElementById(divId));
+     }
+
+     function populateUserstoryTables() {
+    
+	
+	showUserStoriesTable('Roadmap - Realistic planning', 'stories_planning', table1); 
+	showUserStoriesTable('Roadmap - Raising new talents', 'stories_talents', table2);
+	showUserStoriesTable('Roadmap - Product lifecycle', 'stories_lifecycle', table3);
+	showUserStoriesTable('Roadmap - Team commitment', 'stories_team', table4);
+
+
+
+     }
+
+     function onLoad() {
+       rallyDataSource = new rally.sdk.data.RallyDataSource("9369223425",
+                                  "9369223515",
+                                 "false",
+                                 "true")
+       
+	populateUserstoryTables();
+
+	//var iterConfig = {label : ""};
+       //iterDropdown = new rally.sdk.ui.IterationDropdown(iterConfig, rallyDataSource);
+      //iterDropdown.display(document.getElementById("iterationDiv"), onIterationSelected);
+     }
+
+     rally.addOnLoad(onLoad);
+   </script>
+
+</head>
+<body>
+
+   <h2>Realistic planning over responding to constant change</h2>
+   <div id="stories_planning"></div>
+
+   <h2>Raising new talents over bringing in specialists</h2>
+   <div id="stories_talents"></div>
+
+   <h2>Product lifecycle focus over get/keep it working (big ball of mud)</h2>
+   <div id="stories_lifecycle"></div>
+
+
+   <h2>Team commitment over individual resource allocation</h2>
+   <div id="stories_team"></div>
+</body>
+</html>
