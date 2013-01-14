@@ -76,6 +76,10 @@
 			}
 			
 			storyPoints = userStory.PlanEstimate;
+			if(storyPoints==null){
+				storyPoints=0;
+			}
+			
 			if(storyPointsPrTag.hasOwnProperty(tag)){
 				storyPointsPrTag[tag]=storyPointsPrTag[tag]+storyPoints;
 			}else {
@@ -167,6 +171,8 @@
              if(pieChart){
             	 pieChart.destroy();
              }
+             
+             storyPointsPrTag= {};
              
              createPieChart();
             
