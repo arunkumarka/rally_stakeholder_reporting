@@ -48,13 +48,13 @@
      function createPieChart(){
     	 
     	 var queryObject = {
-    	          	type: 'HierarchicalRequirement',
-    	          	key : 'stories',
-    	          	fetch: true, 
-    	          	//query: '(Iteration.Name Contains "2013 01+02")'
-    	          	//query: '(Name Contains "Roadmap")'
-    	          	query: iterationFilterQuery
-    	        	};
+ 	          	type: 'HierarchicalRequirement',
+ 	          	key : 'stories',
+ 	          	fetch: true, 
+ 	          	query: '(Iteration.Name Contains "' + iteration.Name + '")'
+ 	          	//query: '(Name Contains "Roadmap")'
+ 	          	//query: iterationFilterQuery
+ 	        	};
     	 rallyDataSource.findAll(queryObject, showPieChartBasedOnResult);
      }
      
@@ -100,11 +100,11 @@
     	 //var chartData = {"/release/12345": 5, "/release/23456": 8};
     	 
          var pieConfig = {
-             title : "User story distribution",
+             title : "User story distribution for " +iteration.Name ,
              values: chartValues,
              data:  chartData,
-             height : 400,
-             width : 400
+             height : 500,
+             width : 500
            };
          pieChart = new rally.sdk.ui.PieChart(pieConfig, rallyDataSource);
          pieChart.display("chart_distribution");
@@ -121,6 +121,7 @@
                  columnKeys : ['Category', 'StoryPoints', 'Percentage'],
                  columnHeaders: ['Category', 'Story points', 'Percentage'],
                  columnWidths : ['300px', '80px','80px'],
+                 
                };
 
           table = new rally.sdk.ui.Table(tableConfig,rallyDataSource);
@@ -132,16 +133,25 @@
   		    }
   	 	  }
           
+          var arRows = new Array();
+          
           for (var key in storyPointsPrTag) {
     		    if (storyPointsPrTag.hasOwnProperty(key)) {
     		    	var storyPoints = storyPointsPrTag[key];
     		    	var percentage = ((storyPoints/sumStoryPoints)*100).toFixed(2) + ' %';
     		    	
     		    	rowInfo = {'Category' : key, 'StoryPoints' : storyPoints, 'Percentage' : percentage}; 
-    		    	table.addRow(rowInfo);   
+    		    	arRows.push(rowInfo);
+    		    	//table.addRow(rowInfo);   
     		    }
     	 }
 
+          arRows.sort(function(a,b){return b.StoryPoints - a.StoryPoints});
+          for (var i = 0; i < arRows.length; i++) {
+        	  table.addRow(arRows[i]); 
+          }
+          
+          
           table.display(document.getElementById('table_distribution'));
      }
        
@@ -157,6 +167,8 @@
              if(pieChart){
             	 pieChart.destroy();
              }
+             
+             createPieChart();
             
          } 
      }
@@ -166,9 +178,19 @@
 
 </head>
 <body>
+<table width="100%">
+<tr>
+<td valign="top" style="margin: 0 auto;">
+<div id="chart_distribution"></div>
+</td>
 
-   <div id="chart_distribution"></div>
-   <div id="table_distribution"></div>
+<td valign="top" style="margin: 0 auto;">
+<div id="table_distribution"></div>
+</td>
+</tr>
+</table>
+   
+   
 
 </body>
 </html>
