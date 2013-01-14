@@ -18,6 +18,8 @@
      var iterationFilterQuery=null;
      var table= null;
      var pieChart=null;
+     var logEntries = new Array();
+     var tableLog=null;
 
      function onLoad() {
        /*rallyDataSource = new rally.sdk.data.RallyDataSource("9369223425",
@@ -73,11 +75,13 @@
 				
 			}else {
 				tag=NO_TAG;
+				logEntries.push("Userstory " + userStory.FormattedID + ":"  + userStory.Name + " has no defined tag");
 			}
 			
 			storyPoints = userStory.PlanEstimate;
 			if(storyPoints==null){
 				storyPoints=0;
+				logEntries.push("Userstory " + userStory.FormattedID + ":"  + userStory.Name + " has no defined story points");
 			}
 			
 			if(storyPointsPrTag.hasOwnProperty(tag)){
@@ -157,6 +161,7 @@
           
           
           table.display(document.getElementById('table_distribution'));
+          displayLogEntries();
      }
        
        //http://developer.rallydev.com/apps-timebox-filtered-dashboards
@@ -171,12 +176,37 @@
              if(pieChart){
             	 pieChart.destroy();
              }
+             if(tableLog){
+            	 tableLog.destroy();
+             }
              
              storyPointsPrTag= {};
+             logEntries=new Array();
              
              createPieChart();
             
          } 
+     }
+     
+     function displayLogEntries(){
+    	 if(logEntries.length!=0){
+
+    		 var tableConfig = {
+                     columnKeys : ['Log'],
+                     columnHeaders: ['Log'],
+                     columnWidths : ['800px'], 
+                   };
+
+              tableLog = new rally.sdk.ui.Table(tableConfig,rallyDataSource);
+    	
+        	 for (var i = 0; i < logEntries.length; i++) {
+        		 var rowLog = {'Log' : logEntries[i]}; 
+        		 tableLog.addRow(rowLog); 
+        	  }
+         
+        	 tableLog.display(document.getElementById('table_log_entries'));
+    	 }
+    	 
      }
 
      rally.addOnLoad(onLoad);
@@ -196,7 +226,8 @@
 </tr>
 </table>
    
-   
+  
+<div id="table_log_entries"></div>   
 
 </body>
 </html>
