@@ -75,13 +75,13 @@
 				
 			}else {
 				tag=NO_TAG;
-				logEntries.push("Userstory " + userStory.FormattedID + ":"  + userStory.Name + " has no defined tag");
+				logEntries.push("User story " + userStory.FormattedID + ":"  + userStory.Name + " has no defined tag");
 			}
 			
 			storyPoints = userStory.PlanEstimate;
 			if(storyPoints==null){
 				storyPoints=0;
-				logEntries.push("Userstory " + userStory.FormattedID + ":"  + userStory.Name + " has no defined story points");
+				logEntries.push("User story " + userStory.FormattedID + ":"  + userStory.Name + " has no defined story points");
 			}
 			
 			if(storyPointsPrTag.hasOwnProperty(tag)){
@@ -189,23 +189,21 @@
      }
      
      function displayLogEntries(){
-    	 if(logEntries.length!=0){
 
-    		 var tableConfig = {
-                     columnKeys : ['Log'],
-                     columnHeaders: ['Log'],
-                     columnWidths : ['800px'], 
-                   };
+   		 var tableConfig = {
+                    columnKeys : ['Log'],
+                    columnHeaders: ['Warning messages'],
+                    columnWidths : ['800px'], 
+                  };
 
-              tableLog = new rally.sdk.ui.Table(tableConfig,rallyDataSource);
-    	
-        	 for (var i = 0; i < logEntries.length; i++) {
-        		 var rowLog = {'Log' : logEntries[i]}; 
-        		 tableLog.addRow(rowLog); 
-        	  }
-         
-        	 tableLog.display(document.getElementById('table_log_entries'));
-    	 }
+             tableLog = new rally.sdk.ui.Table(tableConfig,rallyDataSource);
+   	
+       	 for (var i = 0; i < logEntries.length; i++) {
+       		 var rowLog = {'Log' : logEntries[i]}; 
+       		 tableLog.addRow(rowLog); 
+       	  }
+        
+       	 tableLog.display(document.getElementById('table_log_entries'));
     	 
      }
 
