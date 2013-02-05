@@ -1,0 +1,281 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+   <title>Userstory distribution</title>
+
+    <!--App information-->
+    <meta name="Name" content="User story distribution"/>
+    <meta name="Version" content="0.1"/>
+    <meta name="Vendor" content="Bouvet (Dagfinn Parnas)"/>
+
+   <script type="text/javascript" src="https://rally1.rallydev.com/apps/1.29/sdk.js"></script>
+   <script type="text/javascript">
+
+     var rallyDataSource = null;
+     
+     var storyPointsTotalPrTag= {};
+     var storyPointsPlannedPrTag= {};
+     var storyPointsInProgressPrTag= {};
+     var storyPointsCompletedPrTag= {};
+     
+     var iteration = null;
+     var iterationFilterQuery=null;
+     var table= null;
+     var pieChart=null;
+     var logEntries = new Array();
+     var tableLog=null;
+
+     function onLoad() {
+       /*rallyDataSource = new rally.sdk.data.RallyDataSource("9369223425",
+                                  "9369223515",
+                                 "false",
+                                 "true");*/
+       
+       rallyDataSource = new rally.sdk.data.RallyDataSource("__WORKSPACE_OID__",
+               "__PROJECT_OID__",
+               "__PROJECT_SCOPING_UP__",
+               "__PROJECT_SCOPING_DOWN__");
+        
+                                 
+       var panelContext = rally.sdk.util.Context.getPanelContext();
+       if(panelContext.timeboxFilter && panelContext.timeboxFilter.iteration) {
+           //Global iteration filter
+           iteration = panelContext.timeboxFilter.iteration;
+           iterationFilterQuery = panelContext.timeboxFilter.query;
+       }                           
+                                 
+    	createPieChart();
+        
+	//var iterConfig = {label : ""};
+       //iterDropdown = new rally.sdk.ui.IterationDropdown(iterConfig, rallyDataSource);
+      //iterDropdown.display(document.getElementById("iterationDiv"), onIterationSelected);
+     }
+     
+     function createPieChart(){
+    	 
+    	 var queryObject = {
+ 	          	type: 'HierarchicalRequirement',
+ 	          	key : 'stories',
+ 	          	fetch: true, 
+ 	          	query: '(Iteration.Name Contains "' + iteration.Name + '")'
+ 	          	//query: '(Name Contains "Roadmap")'
+ 	          	//query: iterationFilterQuery
+ 	        	};
+    	 rallyDataSource.findAll(queryObject, showPieChartBasedOnResult);
+     }
+     
+     function showPieChartBasedOnResult(results) {
+
+    	 var NO_TAG= "User stories not tagged"
+    	
+    	 
+    	 for ( var i = 0; i < results.stories.length; i++) {
+			var userStory = results.stories[i];
+			var scheduledState = userStory.ScheduleState;
+			var tag=null;
+			var storyPoints = 0;
+			if(userStory.Tags != null && userStory.Tags.length>=1){
+				tag = userStory.Tags[0]._refObjectName;
+				
+				
+			}else {
+				tag=NO_TAG;
+				logEntries.push("User story " + userStory.FormattedID + ":"  + userStory.Name + " has no defined tag");
+			}
+			
+			storyPoints = userStory.PlanEstimate;
+			if(storyPoints==null){
+				storyPoints=0;
+				logEntries.push("User story " + userStory.FormattedID + ":"  + userStory.Name + " has no defined story points");
+			}
+			
+			//update total sum for tag
+			if(storyPointsTotalPrTag.hasOwnProperty(tag)){
+				storyPointsTotalPrTag[tag]=storyPointsTotalPrTag[tag]+storyPoints;
+			}else {
+				storyPointsTotalPrTag[tag]=storyPoints;
+			}
+			
+			//update sum based on user story state
+			if(scheduledState=="Defined"){
+				if(storyPointsPlannedPrTag.hasOwnProperty(tag)){
+					storyPointsPlannedPrTag[tag]=storyPointsPlannedPrTag[tag]+storyPoints;
+				}else {
+					storyPointsPlannedPrTag[tag]=storyPoints;
+				}
+			}else if(scheduledState=="In-Progress"){
+				if(storyPointsInProgressPrTag.hasOwnProperty(tag)){
+					storyPointsInProgressPrTag[tag]=storyPointsInProgressPrTag[tag]+storyPoints;
+				}else {
+					storyPointsInProgressPrTag[tag]=storyPoints;
+				}
+			}else if(scheduledState=="Completed" || scheduledState=="Accepted"){
+				if(storyPointsCompletedPrTag.hasOwnProperty(tag)){
+					storyPointsCompletedPrTag[tag]=storyPointsCompletedPrTag[tag]+storyPoints;
+				}else {
+					storyPointsCompletedPrTag[tag]=storyPoints;
+				}
+			}else {
+				logEntries.push("User story " + userStory.FormattedID + ":"  + userStory.Name + " has no valid scheduledState "+ scheduledState);
+			}
+			
+		}
+    	 
+    	 
+    	 var chartData={};
+    	 var chartValues = {};
+    	 for (var key in storyPointsTotalPrTag) {
+    		    if (storyPointsTotalPrTag.hasOwnProperty(key)) {
+    		        //alert('key is: ' + k + ', value is: ' + a[k]);
+    				chartValues[key]=key;
+    				chartData[key]=storyPointsTotalPrTag[key];
+    		        
+    		    }
+    	 }
+    	 
+    	 //var chartValues = {"/release/12345": "Release 1", "/release/23456": "Release 2"};
+    	 //var chartData = {"/release/12345": 5, "/release/23456": 8};
+    	 
+         var pieConfig = {
+             title : "User story distribution for " +iteration.Name ,
+             values: chartValues,
+             data:  chartData,
+             height : 500,
+             width : 500
+           };
+         pieChart = new rally.sdk.ui.PieChart(pieConfig, rallyDataSource);
+         pieChart.display("chart_distribution");
+         
+         //can only be called once this method is complete
+         showTableDistribution ();
+       }
+     
+     //refactor: Use onPieCompletedCallback callback instead?
+     //http://developer.rallydev.com/pie-chart
+     function showTableDistribution (){
+    	 
+         var tableConfig = {
+                 columnKeys : ['Category', 'Percentage','StoryPointsTotal','StoryPointsPlanned', 'StoryPointsInProgress', 'StoryPointsCompleted' ],
+                 columnHeaders: ['Category', 'Percentage','Story points<br>total','Story points<br>planned','Story points<br>in-progress','Story points<br>completed' ],
+                 columnWidths : ['250px', '70px','80px','90px','85px','95px'],
+                 
+               };
+
+          table = new rally.sdk.ui.Table(tableConfig,rallyDataSource);
+
+          var sumStoryPoints= 0; 
+          for (var key in storyPointsTotalPrTag) {
+  		    if (storyPointsTotalPrTag.hasOwnProperty(key)) {
+  		    	sumStoryPoints = sumStoryPoints + storyPointsTotalPrTag[key];   
+  		    }
+  	 	  }
+          
+          var arRows = new Array();
+          
+          for (var key in storyPointsTotalPrTag) {
+    		    if (storyPointsTotalPrTag.hasOwnProperty(key)) {
+    		    	var storyPointsTotal = storyPointsTotalPrTag[key];
+    		    	
+    		    	var storyPointsPlanned = "-";
+    		    	if(storyPointsPlannedPrTag.hasOwnProperty(key)){
+    		    		storyPointsPlanned= storyPointsPlannedPrTag[key]
+    		    	}
+    		    	
+    		    	var storyPointsInProgress = "-";
+    		    	if(storyPointsInProgressPrTag.hasOwnProperty(key)){
+    		    		storyPointsInProgress= storyPointsInProgressPrTag[key]
+    		    	}
+    		    	
+    		    	var storyPointsCompleted = "-";
+    		    	if(storyPointsCompletedPrTag.hasOwnProperty(key)){
+    		    		storyPointsCompleted= storyPointsCompletedPrTag[key]
+    		    	}
+    		    	
+
+    		    	var percentage = ((storyPointsTotal/sumStoryPoints)*100).toFixed(2) + ' %';
+    		    	
+    		    	rowInfo = {'Category' : key, 'StoryPointsTotal' : storyPointsTotal,'StoryPointsPlanned':storyPointsPlanned, 'StoryPointsInProgress':storyPointsInProgress, 'StoryPointsCompleted':storyPointsCompleted, 'Percentage' : percentage}; 
+    		    	arRows.push(rowInfo);
+    		    	//table.addRow(rowInfo);   
+    		    }
+    	 }
+
+          arRows.sort(function(a,b){return b.StoryPoints - a.StoryPoints});
+          for (var i = 0; i < arRows.length; i++) {
+        	  table.addRow(arRows[i]); 
+          }
+          
+          
+          table.display(document.getElementById('table_distribution'));
+          displayLogEntries();
+     }
+       
+       //http://developer.rallydev.com/apps-timebox-filtered-dashboards
+     function onDashboardPageTimeboxFilterChanged(args) {
+         if (args.iteration) {
+             //Global iteration changed
+             iteration = args.iteration;
+             iterationFilterQuery = args.query;
+             if(table){
+            	 table.destroy();
+             }
+             if(pieChart){
+            	 pieChart.destroy();
+             }
+             if(tableLog){
+            	 tableLog.destroy();
+             }
+             
+             storyPointsTotalPrTag= {};
+             storyPointsPlannedPrTag= {};
+             storyPointsInProgressPrTag= {};
+             storyPointsCompletedPrTag= {};
+             logEntries=new Array();
+             
+             createPieChart();
+            
+         } 
+     }
+     
+     function displayLogEntries(){
+
+   		 var tableConfig = {
+                    columnKeys : ['Log'],
+                    columnHeaders: ['Warning messages'],
+                    columnWidths : ['800px'], 
+                  };
+
+             tableLog = new rally.sdk.ui.Table(tableConfig,rallyDataSource);
+   	
+       	 for (var i = 0; i < logEntries.length; i++) {
+       		 var rowLog = {'Log' : logEntries[i]}; 
+       		 tableLog.addRow(rowLog); 
+       	  }
+        
+       	 tableLog.display(document.getElementById('table_log_entries'));
+    	 
+     }
+
+     rally.addOnLoad(onLoad);
+   </script>
+
+</head>
+<body>
+<table width="100%">
+<tr>
+<td valign="top" style="margin: 0 auto;">
+<div id="chart_distribution"></div>
+</td>
+
+<td valign="top" style="margin: 0 auto;">
+<div id="table_distribution"></div>
+</td>
+</tr>
+</table>
+   
+  
+<div id="table_log_entries"></div>   
+
+</body>
+</html>
