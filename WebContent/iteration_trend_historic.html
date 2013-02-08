@@ -1,0 +1,259 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+   <title>Userstory distribution</title>
+
+    <!--App information-->
+    <meta name="Name" content="Iteration trend and distribution"/>
+    <meta name="Version" content="0.1"/>
+    <meta name="Vendor" content="Bouvet (Dagfinn Parnas)"/>
+
+   <script type="text/javascript" src="https://rally1.rallydev.com/apps/1.29/sdk.js"></script>
+   <script type="text/javascript">
+
+     var rallyDataSource = null;
+     var storyPointsPrTag= {}; 
+     var iteration = null;
+     var iterationFilterQuery=null;
+     var table= null;
+     var pieChart=null;
+     var logEntries = new Array();
+     var tableLog=null;
+
+     function onLoad() {
+       rallyDataSource = new rally.sdk.data.RallyDataSource("9369223425",
+               "9397264390",
+               "false",
+               "true");
+       
+       /*rallyDataSource = new rally.sdk.data.RallyDataSource("__WORKSPACE_OID__",
+               "__PROJECT_OID__",
+               "__PROJECT_SCOPING_UP__",
+               "__PROJECT_SCOPING_DOWN__");
+        */
+                                 
+       var panelContext = rally.sdk.util.Context.getPanelContext();
+       if(panelContext.timeboxFilter && panelContext.timeboxFilter.iteration) {
+           //Global iteration filter
+           iteration = panelContext.timeboxFilter.iteration;
+           iterationFilterQuery = panelContext.timeboxFilter.query;
+       }                           
+                                 
+    	createChart();
+
+     }
+     
+     function createChart(){
+    	 //1. Query all iterations before the current date
+    	 var queryObject = {
+ 	          	type: 'Iteration',
+ 	          	key : 'iterations',
+ 	          	fetch: true, 
+ 	          	query: '(StartDate < ' +  rally.sdk.util.DateTime.toIsoString(new Date()) + ')',
+ 	          	order: 'StartDate desc'
+ 	        	};
+    	 rallyDataSource.findAll(queryObject, onQueryIterationsComplete);
+     }
+     
+     function onQueryIterationsComplete(results){
+    	 alert('Found '+ results.iterations.length + ' iterations before today');
+    	 var userStoryFilter = new Array(); 
+    	 //2. Create a new query string to be used for retrieving all user stories in these iterations
+    	 for ( var i = 0; i < results.iterations.length; i++) {
+    		 var iteration = results.iterations[i];
+    		 userStoryFilter.push("Iteration.ObjectID = "+iteration.ObjectID+"");
+    	 }
+    	 
+    	 //build the query object
+    	 var queryUserStoryFilter=rally.sdk.util.Query.or(userStoryFilter);
+    	 
+    	 var queryObject = {
+  	          	type: 'HierarchicalRequirement',
+  	          	key : 'stories',
+  	          	fetch: true, 
+  	          	query: queryUserStoryFilter,
+  	        	};
+    	 
+     	 rallyDataSource.findAll(queryObject, onQueryUserStoriesComplete); 
+     }
+     
+     function onQueryUserStoriesComplete(results){
+    	 alert('Found '+ results.stories.length + ' user stories in these iterations');
+    	 for ( var i = 0; i < results.stories.length; i++) {
+    		 var userStory = results.stories[i];
+    		 
+    	 }
+     }
+     
+     
+     
+     function showPieChartBasedOnResult(results) {
+
+    	 var NO_TAG= "User stories not tagged"
+    	
+    	 
+    	 for ( var i = 0; i < results.stories.length; i++) {
+			var userStory = results.stories[i];
+			var tag=null;
+			var storyPoints = 0;
+			if(userStory.Tags != null && userStory.Tags.length>=1){
+				tag = userStory.Tags[0]._refObjectName;
+				
+				
+			}else {
+				tag=NO_TAG;
+				logEntries.push("User story " + userStory.FormattedID + ":"  + userStory.Name + " has no defined tag");
+			}
+			
+			storyPoints = userStory.PlanEstimate;
+			if(storyPoints==null){
+				storyPoints=0;
+				logEntries.push("User story " + userStory.FormattedID + ":"  + userStory.Name + " has no defined story points");
+			}
+			
+			if(storyPointsPrTag.hasOwnProperty(tag)){
+				storyPointsPrTag[tag]=storyPointsPrTag[tag]+storyPoints;
+			}else {
+				storyPointsPrTag[tag]=storyPoints;
+			}
+			
+		}
+    	 
+    	 
+    	 var chartData={};
+    	 var chartValues = {};
+    	 for (var key in storyPointsPrTag) {
+    		    if (storyPointsPrTag.hasOwnProperty(key)) {
+    		        //alert('key is: ' + k + ', value is: ' + a[k]);
+    				chartValues[key]=key;
+    				chartData[key]=storyPointsPrTag[key];
+    		        
+    		    }
+    	 }
+    	 
+    	 //var chartValues = {"/release/12345": "Release 1", "/release/23456": "Release 2"};
+    	 //var chartData = {"/release/12345": 5, "/release/23456": 8};
+    	 
+         var pieConfig = {
+             title : "User story distribution for " +iteration.Name ,
+             values: chartValues,
+             data:  chartData,
+             height : 500,
+             width : 500
+           };
+         pieChart = new rally.sdk.ui.PieChart(pieConfig, rallyDataSource);
+         pieChart.display("chart_distribution");
+         
+         //can only be called once this method is complete
+         showTableDistribution ();
+       }
+     
+     //refactor: Use onPieCompletedCallback callback instead?
+     //http://developer.rallydev.com/pie-chart
+     function showTableDistribution (){
+    	 
+         var tableConfig = {
+                 columnKeys : ['Category', 'StoryPoints', 'Percentage'],
+                 columnHeaders: ['Category', 'Story points', 'Percentage'],
+                 columnWidths : ['300px', '80px','80px'],
+                 
+               };
+
+          table = new rally.sdk.ui.Table(tableConfig,rallyDataSource);
+
+          var sumStoryPoints= 0; 
+          for (var key in storyPointsPrTag) {
+  		    if (storyPointsPrTag.hasOwnProperty(key)) {
+  		    	sumStoryPoints = sumStoryPoints + storyPointsPrTag[key];   
+  		    }
+  	 	  }
+          
+          var arRows = new Array();
+          
+          for (var key in storyPointsPrTag) {
+    		    if (storyPointsPrTag.hasOwnProperty(key)) {
+    		    	var storyPoints = storyPointsPrTag[key];
+    		    	var percentage = ((storyPoints/sumStoryPoints)*100).toFixed(2) + ' %';
+    		    	
+    		    	rowInfo = {'Category' : key, 'StoryPoints' : storyPoints, 'Percentage' : percentage}; 
+    		    	arRows.push(rowInfo);
+    		    	//table.addRow(rowInfo);   
+    		    }
+    	 }
+
+          arRows.sort(function(a,b){return b.StoryPoints - a.StoryPoints});
+          for (var i = 0; i < arRows.length; i++) {
+        	  table.addRow(arRows[i]); 
+          }
+          
+          
+          table.display(document.getElementById('table_distribution'));
+          displayLogEntries();
+     }
+       
+       //http://developer.rallydev.com/apps-timebox-filtered-dashboards
+     function onDashboardPageTimeboxFilterChanged(args) {
+         if (args.iteration) {
+             //Global iteration changed
+             iteration = args.iteration;
+             iterationFilterQuery = args.query;
+             if(table){
+            	 table.destroy();
+             }
+             if(pieChart){
+            	 pieChart.destroy();
+             }
+             if(tableLog){
+            	 tableLog.destroy();
+             }
+             
+             storyPointsPrTag= {};
+             logEntries=new Array();
+             
+             createChart();
+            
+         } 
+     }
+     
+     function displayLogEntries(){
+
+   		 var tableConfig = {
+                    columnKeys : ['Log'],
+                    columnHeaders: ['Warning messages'],
+                    columnWidths : ['800px'], 
+                  };
+
+             tableLog = new rally.sdk.ui.Table(tableConfig,rallyDataSource);
+   	
+       	 for (var i = 0; i < logEntries.length; i++) {
+       		 var rowLog = {'Log' : logEntries[i]}; 
+       		 tableLog.addRow(rowLog); 
+       	  }
+        
+       	 tableLog.display(document.getElementById('table_log_entries'));
+    	 
+     }
+
+     rally.addOnLoad(onLoad);
+   </script>
+
+</head>
+<body>
+<table width="100%">
+<tr>
+<td valign="top" style="margin: 0 auto;">
+<div id="chart_distribution"></div>
+</td>
+
+<td valign="top" style="margin: 0 auto;">
+<div id="table_distribution"></div>
+</td>
+</tr>
+</table>
+   
+  
+<div id="table_log_entries"></div>   
+
+</body>
+</html>
