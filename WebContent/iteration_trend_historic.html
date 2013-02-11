@@ -8,6 +8,7 @@
     <meta name="Name" content="Iteration trend and distribution"/>
     <meta name="Version" content="0.1"/>
     <meta name="Vendor" content="Bouvet (Dagfinn Parnas)"/>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
 
    <script type="text/javascript" src="https://rally1.rallydev.com/apps/1.29/sdk.js"></script>
    <script type="text/javascript">
@@ -20,6 +21,14 @@
      var pieChart=null;
      var logEntries = new Array();
      var tableLog=null;
+     
+     var iterationsForReport =new Array();
+     
+     var dataForReport=null;
+     
+     
+     
+     var NO_TAG= "User stories not tagged"
 
      function onLoad() {
        rallyDataSource = new rally.sdk.data.RallyDataSource("9369223425",
@@ -39,8 +48,9 @@
            iteration = panelContext.timeboxFilter.iteration;
            iterationFilterQuery = panelContext.timeboxFilter.query;
        }                           
-                                 
-    	createChart();
+            
+       //drawChart();
+       createChart();
 
      }
      
@@ -57,11 +67,14 @@
      }
      
      function onQueryIterationsComplete(results){
-    	 alert('Found '+ results.iterations.length + ' iterations before today');
+    	 //alert('Found '+ results.iterations.length + ' iterations before today');
+    	 
+    	 iterationsForReport = new Array();
     	 var userStoryFilter = new Array(); 
     	 //2. Create a new query string to be used for retrieving all user stories in these iterations
     	 for ( var i = 0; i < results.iterations.length; i++) {
     		 var iteration = results.iterations[i];
+    		 iterationsForReport.push(iteration);
     		 userStoryFilter.push("Iteration.ObjectID = "+iteration.ObjectID+"");
     	 }
     	 
@@ -78,77 +91,112 @@
      	 rallyDataSource.findAll(queryObject, onQueryUserStoriesComplete); 
      }
      
+     /**
+     * Called with results = all user stories in the iterations focused on
+     * Should summarize story points pr tag pr iteration
+     */
      function onQueryUserStoriesComplete(results){
-    	 alert('Found '+ results.stories.length + ' user stories in these iterations');
+    	 //alert('Found '+ results.stories.length + ' user stories in these iterations');
+		 var foundTags = {};
+		 arTagsIndex=0;
+    	 var dataMapForReport = create2DArrayMap(iterationsForReport.length+1);
+    	 //loop through all user stories and generate storypoints pr tag for each iteration
     	 for ( var i = 0; i < results.stories.length; i++) {
     		 var userStory = results.stories[i];
+   			 var tag=getTag(userStory);
+   			 var storyPoints = 0;
+   			 
+   			storyPoints = userStory.PlanEstimate;
+   			if(storyPoints==null){
+   				storyPoints=0;
+   				logEntries.push("User story " + userStory.FormattedID + ":"  + userStory.Name + " has no defined story points");
+   			}
+   			
+   			
+   			var iterationIndex =getIterationIndex(userStory.Iteration) ;
+   			if(iterationIndex!=-1){   			
+				if(dataMapForReport[iterationIndex].hasOwnProperty(tag)){
+					dataMapForReport[iterationIndex][tag]=dataMapForReport[iterationIndex][tag]+storyPoints;	
+	   			}else {
+	   				dataMapForReport[iterationIndex][tag]=storyPoints;
+	   			}
+				foundTags[tag]=true;	
+   			}else {
+   				logEntries.push("User story " + userStory.FormattedID + ":"  + userStory.Name + " has no valid iteration");
+   			}
+    	 }
+    	 
+    	 //convert to format expected by Google charts
+    	 dataForReport = create2DArray(dataMapForReport.length);
+    	 dataForReport[0][0]="Iteration";
+    	 for ( var i = 0; i < iterationsForReport.length; i++) {
+    		 dataForReport[i+1][0]=iterationsForReport[i].Name;
     		 
     	 }
+    	 
+    	 var columnIndex=1;
+    	 for (var tag in foundTags) {
+ 		    if (foundTags.hasOwnProperty(tag)) {
+ 		    	//populate header
+ 		    	dataForReport[0][columnIndex] = tag ;
+ 		    	
+ 		    	//populate story points for each iteration
+ 		    	for ( var i = 0; i < iterationsForReport.length; i++) {
+ 		    		var iterationIndex = i+1;
+ 		    		if(dataMapForReport[iterationIndex].hasOwnProperty(tag)){
+ 		    			dataForReport[iterationIndex][columnIndex] = dataMapForReport[iterationIndex][tag];
+ 		    		}else {
+ 		    			dataForReport[iterationIndex][columnIndex]=0;
+ 		    		}
+ 		    		
+ 		    	}
+ 		    	
+ 		    	columnIndex++;
+ 		    	
+ 		    }
+ 		 }
+    	 
+    	 createGoogleChart();
+    	 //alert('Finished processing');
      }
      
      
-     
-     function showPieChartBasedOnResult(results) {
+     function createGoogleChart(){
+   		  var data = google.visualization.arrayToDataTable(dataForReport);
 
-    	 var NO_TAG= "User stories not tagged"
-    	
-    	 
-    	 for ( var i = 0; i < results.stories.length; i++) {
-			var userStory = results.stories[i];
-			var tag=null;
-			var storyPoints = 0;
-			if(userStory.Tags != null && userStory.Tags.length>=1){
-				tag = userStory.Tags[0]._refObjectName;
-				
-				
-			}else {
-				tag=NO_TAG;
-				logEntries.push("User story " + userStory.FormattedID + ":"  + userStory.Name + " has no defined tag");
-			}
-			
-			storyPoints = userStory.PlanEstimate;
-			if(storyPoints==null){
-				storyPoints=0;
-				logEntries.push("User story " + userStory.FormattedID + ":"  + userStory.Name + " has no defined story points");
-			}
-			
-			if(storyPointsPrTag.hasOwnProperty(tag)){
-				storyPointsPrTag[tag]=storyPointsPrTag[tag]+storyPoints;
-			}else {
-				storyPointsPrTag[tag]=storyPoints;
-			}
-			
-		}
-    	 
-    	 
-    	 var chartData={};
-    	 var chartValues = {};
-    	 for (var key in storyPointsPrTag) {
-    		    if (storyPointsPrTag.hasOwnProperty(key)) {
-    		        //alert('key is: ' + k + ', value is: ' + a[k]);
-    				chartValues[key]=key;
-    				chartData[key]=storyPointsPrTag[key];
-    		        
-    		    }
-    	 }
-    	 
-    	 //var chartValues = {"/release/12345": "Release 1", "/release/23456": "Release 2"};
-    	 //var chartData = {"/release/12345": 5, "/release/23456": 8};
-    	 
-         var pieConfig = {
-             title : "User story distribution for " +iteration.Name ,
-             values: chartValues,
-             data:  chartData,
-             height : 500,
-             width : 500
-           };
-         pieChart = new rally.sdk.ui.PieChart(pieConfig, rallyDataSource);
-         pieChart.display("chart_distribution");
-         
-         //can only be called once this method is complete
-         showTableDistribution ();
-       }
+   		  // Create and draw the visualization.
+   		  new google.visualization.ColumnChart(document.getElementById('chart_div')).
+   		      draw(data,
+   		           {title:"Historic trend report",
+   		            width:1280, height:1024,
+   		            hAxis: {title: "Iteration"},
+   		            vAxis: {title: "Story points"},
+   		           isStacked: true }
+   		      );
+     }
      
+     function getIterationIndex(iteration){
+    	 for ( var i = 0; i < iterationsForReport.length; i++) {
+    		 if(iteration._ref == iterationsForReport[i]._ref){
+    			 return i+1;
+    		 }
+    	 }
+    	 return -1;
+     }
+     
+     
+     function getTag(userStory){
+    	 var tag = NO_TAG;
+    	 
+    	 if(userStory.Tags != null && userStory.Tags.length>=1){
+				tag = userStory.Tags[0]._refObjectName;	
+		 }else {
+			logEntries.push("User story " + userStory.FormattedID + ":"  + userStory.Name + " has no defined tag");
+		 }
+    	 
+    	 return tag;
+     }
+ 
      //refactor: Use onPieCompletedCallback callback instead?
      //http://developer.rallydev.com/pie-chart
      function showTableDistribution (){
@@ -234,7 +282,55 @@
        	 tableLog.display(document.getElementById('table_log_entries'));
     	 
      }
+     
+     function create2DArrayMap(rows) {
+    	  var arr = [];
 
+    	  for (var i=0;i<rows;i++) {
+    	     arr[i] = {};
+    	  }
+
+    	  return arr;
+    	}
+     
+     function create2DArray(rows) {
+   	  var arr = [];
+
+   	  for (var i=0;i<rows;i++) {
+   	     arr[i] = [];
+   	  }
+
+   	  return arr;
+   	}   
+     
+     // Callback that creates and populates a data table,
+     // instantiates the pie chart, passes in the data and
+     // draws it.
+     function drawChart() {
+
+       // Create the data table.
+       var data = new google.visualization.DataTable();
+       data.addColumn('string', 'Topping');
+       data.addColumn('number', 'Slices');
+       data.addRows([
+         ['Mushrooms', 3],
+         ['Onions', 1],
+         ['Olives', 1],
+         ['Zucchini', 1],
+         ['Pepperoni', 2]
+       ]);
+
+       // Set chart options
+       var options = {'title':'How Much Pizza I Ate Last Night',
+                      'width':400,
+                      'height':300};
+
+       // Instantiate and draw our chart, passing in some options.
+       var chart = new google.visualization.PieChart(document.getElementById('chart_div'));
+       chart.draw(data, options);
+     }
+  // Load the Visualization API and the piechart package.
+     google.load('visualization', '1.0', {'packages':['corechart']});
      rally.addOnLoad(onLoad);
    </script>
 
@@ -243,7 +339,7 @@
 <table width="100%">
 <tr>
 <td valign="top" style="margin: 0 auto;">
-<div id="chart_distribution"></div>
+<div id="chart_div"></div>
 </td>
 
 <td valign="top" style="margin: 0 auto;">
