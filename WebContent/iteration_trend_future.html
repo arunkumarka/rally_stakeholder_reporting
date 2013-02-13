@@ -31,16 +31,16 @@
      var NO_TAG= "User stories not tagged"
 
      function onLoad() {
-       rallyDataSource = new rally.sdk.data.RallyDataSource("9369223425",
+       /*rallyDataSource = new rally.sdk.data.RallyDataSource("9369223425",
                "9397264390",
                "false",
-               "true");
+               "true");*/
        
-       /*rallyDataSource = new rally.sdk.data.RallyDataSource("__WORKSPACE_OID__",
+       rallyDataSource = new rally.sdk.data.RallyDataSource("__WORKSPACE_OID__",
                "__PROJECT_OID__",
                "__PROJECT_SCOPING_UP__",
                "__PROJECT_SCOPING_DOWN__");
-       */
+       
                                  
        var panelContext = rally.sdk.util.Context.getPanelContext();
        if(panelContext.timeboxFilter && panelContext.timeboxFilter.iteration) {
@@ -172,7 +172,7 @@
    		  new google.visualization.ColumnChart(document.getElementById('chart_div')).
    		      draw(data,
    		           {title:"Future trend report",
-   		            width:1280, height:1024,
+   		            width:1280, height:700,
    		            hAxis: {title: "Iteration", direction:1},
    		            vAxis: {title: "Story points"},
    		           isStacked: true }
