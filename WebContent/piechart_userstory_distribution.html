@@ -9,6 +9,7 @@
     <meta name="Version" content="0.1"/>
     <meta name="Vendor" content="Bouvet (Dagfinn Parnas)"/>
 
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
    <script type="text/javascript" src="https://rally1.rallydev.com/apps/1.29/sdk.js"></script>
    <script type="text/javascript">
 
@@ -25,8 +26,8 @@
        /*rallyDataSource = new rally.sdk.data.RallyDataSource("9369223425",
                                   "9369223515",
                                  "false",
-                                 "true");*/
-       
+                                 "true");
+       */
        rallyDataSource = new rally.sdk.data.RallyDataSource("__WORKSPACE_OID__",
                "__PROJECT_OID__",
                "__PROJECT_SCOPING_UP__",
@@ -38,7 +39,10 @@
            //Global iteration filter
            iteration = panelContext.timeboxFilter.iteration;
            iterationFilterQuery = panelContext.timeboxFilter.query;
-       }                           
+       } else  {
+    	   alert('This report needs to be run on page that has an iteration filter');
+    	   return;
+       }                        
                                  
     	createPieChart();
         
@@ -95,18 +99,44 @@
     	 
     	 var chartData={};
     	 var chartValues = {};
+    	 var nrOfTags= 0;
     	 for (var key in storyPointsPrTag) {
     		    if (storyPointsPrTag.hasOwnProperty(key)) {
     		        //alert('key is: ' + k + ', value is: ' + a[k]);
     				chartValues[key]=key;
     				chartData[key]=storyPointsPrTag[key];
-    		        
+    				nrOfTags++;
     		    }
     	 }
     	 
-    	 //var chartValues = {"/release/12345": "Release 1", "/release/23456": "Release 2"};
-    	 //var chartData = {"/release/12345": 5, "/release/23456": 8};
     	 
+    	 //convert to format expected by Google charts
+    	 var dataForReport = create2DArray(nrOfTags+1);
+    	 dataForReport[0][0]="Area";
+    	 dataForReport[0][1]="Story points";
+    	 var tempIndex = 1;
+    	 for (var key in chartData) {
+ 		    if (chartData.hasOwnProperty(key)) {
+ 		    	dataForReport[tempIndex][0]=key;
+ 		    	dataForReport[tempIndex][1]=chartData[key]
+ 		    	tempIndex++;
+ 		    }
+ 	 	}
+
+    	 var options = {
+    	          title: "User story distribution for " +iteration.Name,
+    	          pieSliceText: 'percentage',
+    	          width:600, 
+    	          height:500,
+    	          chartArea:{left:20,top:20,width:500,height:400}
+    	        };
+
+    	 var dataGoogleFormat = google.visualization.arrayToDataTable(dataForReport);
+    	 
+    	 var chart = new google.visualization.PieChart(document.getElementById('chart_distribution_google'));
+    	 chart.draw(dataGoogleFormat, options);
+    	 
+    	 /* Old method using rally's own charting library
          var pieConfig = {
              title : "User story distribution for " +iteration.Name ,
              values: chartValues,
@@ -115,7 +145,7 @@
              width : 500
            };
          pieChart = new rally.sdk.ui.PieChart(pieConfig, rallyDataSource);
-         pieChart.display("chart_distribution");
+         pieChart.display("chart_distribution"); */
          
          //can only be called once this method is complete
          showTableDistribution ();
@@ -206,7 +236,21 @@
        	 tableLog.display(document.getElementById('table_log_entries'));
     	 
      }
+     
+     
+     function create2DArray(rows) {
+      	  var arr = [];
 
+      	  for (var i=0;i<rows;i++) {
+      	     arr[i] = [];
+      	  }
+
+      	  return arr;
+      	}  
+     
+     // Load the Visualization API and the piechart package.
+     google.load('visualization', '1.0', {'packages':['corechart']});
+     
      rally.addOnLoad(onLoad);
    </script>
 
@@ -216,6 +260,7 @@
 <tr>
 <td valign="top" style="margin: 0 auto;">
 <div id="chart_distribution"></div>
+<div id="chart_distribution_google"></div>
 </td>
 
 <td valign="top" style="margin: 0 auto;">
