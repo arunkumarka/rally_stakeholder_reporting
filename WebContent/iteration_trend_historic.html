@@ -2,7 +2,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
 <head>
-   <title>Userstory distribution</title>
+   <title>Iteration trend - Historic</title>
 
     <!--App information-->
     <meta name="Name" content="Iteration trend and distribution"/>
@@ -140,14 +140,24 @@
     		 
     	 }
     	 
+    	 dataForReport[0][1]="Planned capacity";
+    	 for ( var i = 0; i < iterationsForReport.length; i++) {
+    		 var resources = iterationsForReport[i].Resources;
+    		 if(resources==null){
+    			 resources=0;
+    		 }
+    		 dataForReport[i+1][1]=resources; 
+    	 }
+    	 
+    	 
     	 var arSortedTags = sortObjToArray(foundTags);
     	 
 
     	 
     	 for ( var j = 0; j < arSortedTags.length; j++) {
     		 var tag = arSortedTags[j].key;
-    		 var columnIndex = j+1;
-    		 dataForReport[0][j+1] = tag ;
+    		 var columnIndex = j+2;
+    		 dataForReport[0][columnIndex] = tag ;
     		//populate story points for each iteration
 		    	for ( var i = 0; i < iterationsForReport.length; i++) {
 		    		var iterationIndex = i+1;
@@ -175,7 +185,8 @@
    		    	    width:1280, height:700,
    		            hAxis: {title: "Iteration", direction:-1},
    		            vAxis: {title: "Story points"},
-   		           isStacked: true }
+   		            isStacked: true, 
+   		        	series: {0: {type: "line", color:"green", pointSize:5, lineWidth:3}}}
    		      );
      }
      
