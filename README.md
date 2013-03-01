@@ -13,6 +13,8 @@ Historic trend
 - Display stacked bar chart with one entry pr iteration. Each iteration's bar is split based on the distribution on different areas.
 - Displays a line with the planned capacity of the iteration
 
+![ScreenShot](https://raw.github.com/elsewhat/rally_stakeholder_reporting/master/images/historic_trend_example.png)
+
 Future trend
 - Same as historic trend, only looks at current and future iterations
 
