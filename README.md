@@ -16,7 +16,7 @@ Historic trend
 ![ScreenShot](https://raw.github.com/elsewhat/rally_stakeholder_reporting/master/images/historic_trend_example.png)
 
 Future trend
-- Same as historic trend, only looks at current and future iterations
+- Same as historic trend, but looks at current and future iterations
 
 User story distribution pr iteration
 - Pie chart with the distribution of user stories based on area
