@@ -133,7 +133,7 @@
 
     	 var dataGoogleFormat = google.visualization.arrayToDataTable(dataForReport);
     	 
-    	 var chart = new google.visualization.PieChart(document.getElementById('chart_distribution_google'));
+    	 var chart = new google.visualization.PieChart(document.getElementById('chart_distribution'));
     	 chart.draw(dataGoogleFormat, options);
     	 
     	 /* Old method using rally's own charting library
@@ -260,7 +260,6 @@
 <tr>
 <td valign="top" style="margin: 0 auto;">
 <div id="chart_distribution"></div>
-<div id="chart_distribution_google"></div>
 </td>
 
 <td valign="top" style="margin: 0 auto;">
