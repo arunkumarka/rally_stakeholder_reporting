@@ -27,29 +27,26 @@
      var dataForReport=null;
      
      
+     //-1 for all
+     var maxNumberOfIterations=-1;
+     
+     
      
      var NO_TAG= "User stories not tagged"
 
      function onLoad() {
-       /*rallyDataSource = new rally.sdk.data.RallyDataSource("9369223425",
+       /*
+    	 rallyDataSource = new rally.sdk.data.RallyDataSource("9369223425",
                "9397264390",
                "false",
-               "true");*/
-       
+               "true");
+       */
        rallyDataSource = new rally.sdk.data.RallyDataSource("__WORKSPACE_OID__",
                "__PROJECT_OID__",
                "__PROJECT_SCOPING_UP__",
                "__PROJECT_SCOPING_DOWN__");
-       
-                                 
-       var panelContext = rally.sdk.util.Context.getPanelContext();
-       if(panelContext.timeboxFilter && panelContext.timeboxFilter.iteration) {
-           //Global iteration filter
-           iteration = panelContext.timeboxFilter.iteration;
-           iterationFilterQuery = panelContext.timeboxFilter.query;
-       }                           
-            
-       //drawChart();
+                            
+
        createChart();
 
      }
@@ -66,6 +63,10 @@
     	 rallyDataSource.findAll(queryObject, onQueryIterationsComplete);
      }
      
+     function destroyChart(){
+    	 
+     }
+     
      function onQueryIterationsComplete(results){
     	 //alert('Found '+ results.iterations.length + ' iterations before today');
     	 
@@ -73,9 +74,14 @@
     	 var userStoryFilter = new Array(); 
     	 //2. Create a new query string to be used for retrieving all user stories in these iterations
     	 for ( var i = 0; i < results.iterations.length; i++) {
-    		 var iteration = results.iterations[i];
-    		 iterationsForReport.push(iteration);
-    		 userStoryFilter.push("Iteration.ObjectID = "+iteration.ObjectID+"");
+    		 if(maxNumberOfIterations!=-1 && i>=maxNumberOfIterations){
+    			 break;
+    		 }else {
+    			 var iteration = results.iterations[i];
+        		 iterationsForReport.push(iteration);
+        		 userStoryFilter.push("Iteration.ObjectID = "+iteration.ObjectID+"");
+    		 }
+    		 
     	 }
     	 
     	 //build the query object
@@ -255,29 +261,6 @@
           displayLogEntries();
      }
        
-       //http://developer.rallydev.com/apps-timebox-filtered-dashboards
-     function onDashboardPageTimeboxFilterChanged(args) {
-         if (args.iteration) {
-             //Global iteration changed
-             iteration = args.iteration;
-             iterationFilterQuery = args.query;
-             if(table){
-            	 table.destroy();
-             }
-             if(pieChart){
-            	 pieChart.destroy();
-             }
-             if(tableLog){
-            	 tableLog.destroy();
-             }
-             
-             storyPointsPrTag= {};
-             logEntries=new Array();
-             
-             createChart();
-            
-         } 
-     }
      
      function displayLogEntries(){
 
@@ -328,7 +311,13 @@
    	  }
 
    	  return arr;
-   	}   
+   	}  
+     
+     function updateIterationCount(nrOfIterations){
+    	 maxNumberOfIterations=nrOfIterations;
+    	 createChart();
+    	 
+     }
      
 
   // Load the Visualization API and the piechart package.
@@ -342,6 +331,8 @@
 <table width="100%">
 <tr>
 <td valign="top" style="margin: 0 auto;">
+
+
 <div id="chart_div"></div>
 </td>
 
@@ -351,6 +342,29 @@
 </tr>
 </table>
    
+ Number of iterations to display:<select onChange="updateIterationCount(this.value)">
+    <option value="-1">All</option>
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
+    <option value="5">5</option>
+    <option value="6">6</option>
+    <option value="7">7</option>
+    <option value="8">8</option>
+    <option value="9">9</option>
+    <option value="10">10</option>
+    <option value="11">11</option>
+    <option value="12">12</option>
+    <option value="13">13</option>
+    <option value="14">14</option>
+    <option value="15">15</option>
+    <option value="16">16</option>
+    <option value="17">17</option>
+    <option value="18">18</option>
+    <option value="19">19</option>
+    <option value="20">20</option>
+  </select>
   
 <div id="table_log_entries"></div>   
 
